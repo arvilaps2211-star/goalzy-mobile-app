@@ -22,24 +22,32 @@ class ProgressRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          CustomPaint(
-            size: Size(size, size),
-            painter: _RingPainter(
-              progress: progress.clamp(0, 1),
-              strokeWidth: strokeWidth,
-              color: color ?? AppColors.primary,
-              backgroundColor: backgroundColor ?? AppColors.glassFill,
-            ),
+    final g = GoalzyColors.of(context);
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: progress.clamp(0, 1)),
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, _) {
+        return SizedBox(
+          width: size,
+          height: size,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              CustomPaint(
+                size: Size(size, size),
+                painter: _RingPainter(
+                  progress: value,
+                  strokeWidth: strokeWidth,
+                  color: color ?? g.primary,
+                  backgroundColor: backgroundColor ?? g.chipFill,
+                ),
+              ),
+              if (child != null) child!,
+            ],
           ),
-          if (child != null) child!,
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -67,7 +75,7 @@ class _RingPainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
     final fgPaint = Paint()
-      ..shader = LinearGradient(colors: [color, AppColors.secondary]).createShader(Rect.fromCircle(center: center, radius: radius))
+      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;

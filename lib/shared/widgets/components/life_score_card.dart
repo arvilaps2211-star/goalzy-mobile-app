@@ -12,31 +12,29 @@ class LifeScoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final g = GoalzyColors.of(context);
+
     if (compact) {
       return GlassCard(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withValues(alpha: 0.2),
-            AppColors.secondary.withValues(alpha: 0.1),
-          ],
-        ),
         child: Row(
           children: [
             ProgressRing(
               progress: lifeScore.overall / 100,
-              size: 64,
+              size: 72,
+              strokeWidth: 6,
               child: Text(
                 lifeScore.overall.round().toString(),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 20),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Life Score', style: Theme.of(context).textTheme.titleMedium),
-                  Text('Your overall life balance', style: Theme.of(context).textTheme.bodySmall),
+                  Text('Life Score', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 4),
+                  Text('Your overall balance today', style: Theme.of(context).textTheme.bodySmall),
                 ],
               ),
             ),
@@ -46,14 +44,7 @@ class LifeScoreCard extends StatelessWidget {
     }
 
     return GlassCard(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          AppColors.primary.withValues(alpha: 0.25),
-          AppColors.surface.withValues(alpha: 0.5),
-        ],
-      ),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -61,39 +52,39 @@ class LifeScoreCard extends StatelessWidget {
             children: [
               ProgressRing(
                 progress: lifeScore.overall / 100,
-                size: 88,
+                size: 96,
                 strokeWidth: 7,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       lifeScore.overall.round().toString(),
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
                     ),
                     Text('Score', style: Theme.of(context).textTheme.labelSmall),
                   ],
                 ),
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: 24),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Life Score', style: Theme.of(context).textTheme.headlineSmall),
-                    const SizedBox(height: 4),
-                    Text('AI-calculated life balance', style: Theme.of(context).textTheme.bodySmall),
+                    const SizedBox(height: 6),
+                    Text('AI-calculated life balance', style: Theme.of(context).textTheme.bodyMedium),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           _MetricBar(label: 'Energy', value: lifeScore.energy, color: AppColors.warning),
-          const SizedBox(height: 10),
-          _MetricBar(label: 'Focus', value: lifeScore.focus, color: AppColors.secondary),
-          const SizedBox(height: 10),
-          _MetricBar(label: 'Motivation', value: lifeScore.motivation, color: AppColors.primary),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
+          _MetricBar(label: 'Focus', value: lifeScore.focus, color: g.primary),
+          const SizedBox(height: 12),
+          _MetricBar(label: 'Motivation', value: lifeScore.motivation, color: AppColors.secondary),
+          const SizedBox(height: 12),
           _MetricBar(label: 'Productivity', value: lifeScore.productivity, color: AppColors.success),
         ],
       ),
@@ -110,22 +101,28 @@ class _MetricBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final g = GoalzyColors.of(context);
     return Row(
       children: [
-        SizedBox(width: 90, child: Text(label, style: Theme.of(context).textTheme.labelMedium)),
+        SizedBox(width: 96, child: Text(label, style: Theme.of(context).textTheme.labelMedium)),
         Expanded(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: value / 100,
-              minHeight: 6,
-              backgroundColor: AppColors.glassFill,
-              color: color,
+            borderRadius: BorderRadius.circular(6),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: value / 100),
+              duration: const Duration(milliseconds: 900),
+              curve: Curves.easeOutCubic,
+              builder: (_, v, __) => LinearProgressIndicator(
+                value: v,
+                minHeight: 8,
+                backgroundColor: g.chipFill,
+                color: color,
+              ),
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        Text('${value.round()}', style: Theme.of(context).textTheme.labelMedium),
+        const SizedBox(width: 10),
+        Text('${value.round()}', style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600)),
       ],
     );
   }

@@ -4,97 +4,126 @@ import '../constants/app_colors.dart';
 import '../constants/app_constants.dart';
 
 abstract final class AppTheme {
-  static ThemeData get darkTheme {
+  static ThemeData get lightTheme => _build(Brightness.light);
+  static ThemeData get darkTheme => _build(Brightness.dark);
+
+  static ThemeData _build(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+    final g = isDark ? GoalzyColors.dark : GoalzyColors.light;
+
     final base = ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.background,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        secondary: AppColors.secondary,
-        surface: AppColors.surface,
-        error: AppColors.danger,
+      brightness: brightness,
+      scaffoldBackgroundColor: g.background,
+      colorScheme: ColorScheme(
+        brightness: brightness,
+        primary: g.primary,
         onPrimary: Colors.white,
-        onSecondary: Colors.black,
-        onSurface: AppColors.textPrimary,
+        secondary: AppColors.secondary,
+        onSecondary: Colors.white,
+        surface: g.surface,
+        onSurface: g.textPrimary,
+        error: AppColors.danger,
+        onError: Colors.white,
       ),
-      dividerColor: AppColors.glassBorder,
+      dividerColor: g.border,
       splashFactory: InkSparkle.splashFactory,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
     );
 
+    final textTheme = _textTheme(g);
+
     return base.copyWith(
-      textTheme: _textTheme,
+      extensions: [g],
+      textTheme: textTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: _textTheme.titleLarge,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        titleTextStyle: textTheme.titleLarge,
+        iconTheme: IconThemeData(color: g.textPrimary),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.surface,
+        color: g.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConstants.glassBorderRadius),
+          borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+          side: BorderSide(color: g.border),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.glassFill,
+        fillColor: g.chipFill,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.glassBorder),
+          borderSide: BorderSide(color: g.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.glassBorder),
+          borderSide: BorderSide(color: g.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide(color: g.primary, width: 1.5),
         ),
-        hintStyle: _textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        hintStyle: textTheme.bodyMedium?.copyWith(color: g.textMuted),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.glassFill,
-        selectedColor: AppColors.primary.withValues(alpha: 0.3),
-        labelStyle: _textTheme.labelMedium!,
-        side: const BorderSide(color: AppColors.glassBorder),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: g.chipFill,
+        selectedColor: g.primary.withValues(alpha: 0.12),
+        labelStyle: textTheme.labelMedium!,
+        side: BorderSide(color: g.border),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: g.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.surfaceLight,
-        contentTextStyle: _textTheme.bodyMedium,
+        backgroundColor: g.surfaceElevated,
+        contentTextStyle: textTheme.bodyMedium,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: g.border),
+        ),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: g.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }
 
-  static TextTheme get _textTheme {
+  static TextTheme _textTheme(GoalzyColors g) {
+    // Plus Jakarta Sans as SF Pro Display alternative
     return GoogleFonts.plusJakartaSansTextTheme(
-      const TextTheme(
-        displayLarge: TextStyle(fontSize: 40, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-        displayMedium: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-        headlineLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-        headlineMedium: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-        headlineSmall: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-        titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-        titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-        titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-        bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.textPrimary),
-        bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.textSecondary),
-        bodySmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: AppColors.textMuted),
-        labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-        labelMedium: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
-        labelSmall: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.textMuted),
+      TextTheme(
+        displayLarge: TextStyle(fontSize: 40, fontWeight: FontWeight.w700, letterSpacing: -1.2, color: g.textPrimary, height: 1.1),
+        displayMedium: TextStyle(fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -0.8, color: g.textPrimary, height: 1.15),
+        headlineLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.5, color: g.textPrimary),
+        headlineMedium: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: g.textPrimary),
+        headlineSmall: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: -0.3, color: g.textPrimary),
+        titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: g.textPrimary),
+        titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: g.textPrimary),
+        titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: g.textPrimary),
+        bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: g.textPrimary, height: 1.5),
+        bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: g.textSecondary, height: 1.45),
+        bodySmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: g.textMuted),
+        labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: g.textPrimary),
+        labelMedium: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: g.textSecondary),
+        labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: g.textMuted),
       ),
     );
   }

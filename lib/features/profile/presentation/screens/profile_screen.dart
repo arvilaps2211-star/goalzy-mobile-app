@@ -11,7 +11,9 @@ import '../../../../shared/widgets/components/progress_ring.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,11 +22,12 @@ class ProfileScreen extends ConsumerWidget {
     final analytics = MockData.analytics;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.surfaceGradient),
-        child: SafeArea(
-          child: CustomScrollView(
-            slivers: [
+      backgroundColor: GoalzyColors.of(context).background,
+      body: SafeArea(
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            if (!embedded)
               SliverAppBar(
                 pinned: true,
                 backgroundColor: Colors.transparent,
@@ -39,6 +42,22 @@ class ProfileScreen extends ConsumerWidget {
                     onPressed: () => context.push('${AppRoutes.home}/settings'),
                   ),
                 ],
+              )
+            else
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Profile', style: Theme.of(context).textTheme.headlineMedium),
+                      IconButton(
+                        icon: const Icon(Icons.settings_outlined),
+                        onPressed: () => context.push('${AppRoutes.home}/settings'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               SliverPadding(
                 padding: const EdgeInsets.all(16),
@@ -113,7 +132,6 @@ class ProfileScreen extends ConsumerWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }

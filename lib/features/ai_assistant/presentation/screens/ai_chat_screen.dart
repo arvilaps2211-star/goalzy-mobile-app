@@ -8,7 +8,9 @@ import '../providers/ai_provider.dart';
 import '../widgets/ai_chat_widgets.dart';
 
 class AiChatScreen extends ConsumerStatefulWidget {
-  const AiChatScreen({super.key});
+  const AiChatScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   ConsumerState<AiChatScreen> createState() => _AiChatScreenState();
@@ -45,45 +47,54 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     final state = ref.watch(aiStateProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.surfaceGradient),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: Row(
-                  children: [
+      backgroundColor: GoalzyColors.of(context).background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Row(
+                children: [
+                  if (!widget.embedded)
                     IconButton(
                       icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
                       onPressed: () => context.pop(),
+                    )
+                  else
+                    const SizedBox(width: 8),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: GoalzyColors.of(context).primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    const AIOrb(size: 40, pulse: false),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('GOALZY AI', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                          Text(
-                            state.isSending ? 'Thinking...' : 'Online',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: state.isSending ? AppColors.warning : AppColors.success,
-                                ),
-                          ),
-                        ],
-                      ),
+                    child: Icon(Icons.auto_awesome_rounded, color: GoalzyColors.of(context).primary, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('GOALZY AI', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                        Text(
+                          state.isSending ? 'Thinking...' : 'Online',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: state.isSending ? AppColors.warning : AppColors.success,
+                              ),
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded),
-                      tooltip: 'Clear chat',
-                      onPressed: state.messages.isEmpty ? null : () => ref.read(aiStateProvider.notifier).clearChat(),
-                    ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    tooltip: 'Clear chat',
+                    onPressed: state.messages.isEmpty ? null : () => ref.read(aiStateProvider.notifier).clearChat(),
+                  ),
+                ],
               ),
-              const Divider(height: 1, color: AppColors.glassBorder),
+            ),
+            Divider(height: 1, color: GoalzyColors.of(context).border),
               Expanded(
                 child: state.isLoading
                     ? const LoadingState(message: 'Loading conversation...')
@@ -114,15 +125,13 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Voice input coming soon'),
-                        backgroundColor: AppColors.surfaceLight,
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
                   },
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );

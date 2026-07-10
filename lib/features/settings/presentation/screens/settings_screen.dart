@@ -10,7 +10,7 @@ enum AppThemeMode { dark, light, system }
 
 class SettingsState {
   const SettingsState({
-    this.themeMode = AppThemeMode.dark,
+    this.themeMode = AppThemeMode.light,
     this.pushNotifications = true,
     this.emailNotifications = false,
     this.habitReminders = true,
@@ -257,8 +257,8 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   String _themeLabel(AppThemeMode mode) => switch (mode) {
-        AppThemeMode.dark => 'Dark (Default)',
-        AppThemeMode.light => 'Light',
+        AppThemeMode.dark => 'Dark',
+        AppThemeMode.light => 'Light (Default)',
         AppThemeMode.system => 'System',
       };
 }
