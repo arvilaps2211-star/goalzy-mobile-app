@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../shared/widgets/components/ai_orb.dart';
 import '../../../../shared/widgets/components/state_widgets.dart';
 import '../providers/ai_provider.dart';
 import '../widgets/ai_chat_widgets.dart';
