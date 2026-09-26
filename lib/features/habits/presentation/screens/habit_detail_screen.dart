@@ -1,0 +1,301 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:collection/collection.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/module_theme.dart';
+import '../../../../core/theme/module_theme_scope.dart';
+import '../../../../core/utils/date_utils.dart' as goalzy_date;
+import '../../../../shared/domain/entities/habit.dart';
+import '../../../../shared/widgets/components/glass_button.dart';
+import '../../../../shared/widgets/components/glass_card.dart';
+import '../../../../shared/widgets/components/module_background.dart';
+import '../../../../shared/widgets/components/progress_ring.dart';
+import '../../../../shared/widgets/components/state_widgets.dart';
+import '../providers/habits_provider.dart';
+
+/// Pushed as a standalone page outside the shell (see task_detail_screen
+/// .dart's doc comment for why) — explicitly opted into the Habits
+/// module here. Note on `_MonthCalendarGrid._isDayCompleted`: the mock
+/// data never populates `Habit.logs` (always empty), so there's no real
+/// per-day history to render — the existing hash-based pattern is at
+/// least seeded from the habit's real `consistencyRate` rather than being
+/// pure noise, so it was left as-is rather than authoring a synthetic
+/// month of fake log entries, which felt like more data fabrication than
+/// this redesign pass should take on unilaterally.
+class HabitDetailScreen extends ConsumerWidget {
+  const HabitDetailScreen({super.key, required this.habitId});
+
+  final String habitId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final habitsState = ref.watch(habitsStateProvider);
+    final habit = habitsState.habits.where((h) => h.id == habitId).firstOrNull;
+
+    return ModuleScope(
+      module: GoalzyModule.habits,
+      child: Builder(
+        builder: (context) {
+          final theme = context.moduleTheme;
+          return Scaffold(
+            backgroundColor: theme.background,
+            body: Stack(
+              children: [
+                const Positioned.fill(child: ModuleBackground()),
+                SafeArea(
+                  child: switch (true) {
+                    _ when habitsState.isLoading && habit == null => const LoadingState(message: 'Loading habit...'),
+                    _ when habitsState.error != null && habit == null => ErrorState(message: habitsState.error!),
+                    _ when habit == null => const EmptyState(title: 'Habit not found', icon: Icons.loop),
+                    _ => _HabitDetailBody(habit: habit),
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _HabitDetailBody extends ConsumerWidget {
+  const _HabitDetailBody({required this.habit});
+
+  final Habit habit;
+
+  Color get _color => Color(int.parse('FF${habit.colorHex}', radix: 16));
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final g = GoalzyColors.of(context);
+
+    return CustomScrollView(
+      slivers: [
+        SliverAppBar(
+          pinned: true,
+          backgroundColor: Colors.transparent,
+          leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.pop()),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+              onPressed: () async {
+                await ref.read(habitsStateProvider.notifier).deleteHabit(habit.id);
+                if (context.mounted) context.pop();
+              },
+            ),
+          ],
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.all(20),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              GlassCard(
+                useModuleTheme: true,
+                gradient: LinearGradient(
+                  colors: [_color.withValues(alpha: 0.15), g.chipFill],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: _color.withValues(alpha: 0.2),
+                        border: Border.all(color: _color.withValues(alpha: 0.4)),
+                      ),
+                      child: Center(child: Text(habit.icon, style: const TextStyle(fontSize: 32))),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(habit.title, style: Theme.of(context).textTheme.headlineSmall),
+                          if (habit.description.isNotEmpty)
+                            Text(habit.description, style: Theme.of(context).textTheme.bodyMedium),
+                          const SizedBox(height: 4),
+                          Text(_frequencyLabel(habit.frequency), style: Theme.of(context).textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ).animate().fadeIn().slideY(begin: 0.08),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(child: _StatCard(label: 'Current Streak', value: '${habit.streak}', icon: '🔥', color: AppColors.warning)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _StatCard(label: 'Best Streak', value: '${habit.bestStreak}', icon: '🏆', color: AppColors.secondary)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _StatCard(label: 'Consistency', value: '${(habit.consistencyRate * 100).round()}%', icon: '📈', color: AppColors.success)),
+                ],
+              ).animate().fadeIn(delay: 80.ms).slideY(begin: 0.06),
+              const SizedBox(height: 20),
+              Text('Consistency', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 12),
+              GlassCard(
+                useModuleTheme: true,
+                child: Row(
+                  children: [
+                    ProgressRing(
+                      progress: habit.consistencyRate,
+                      size: 72,
+                      color: _color,
+                      child: Text('${(habit.consistencyRate * 100).round()}%', style: Theme.of(context).textTheme.labelMedium),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('${habit.targetDays} day target cycle', style: Theme.of(context).textTheme.bodyLarge),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 0, end: habit.consistencyRate),
+                              duration: const Duration(milliseconds: 900),
+                              curve: Curves.easeOutCubic,
+                              builder: (_, value, __) => LinearProgressIndicator(
+                                value: value,
+                                minHeight: 8,
+                                backgroundColor: g.chipFill,
+                                color: _color,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ).animate().fadeIn(delay: 140.ms),
+              const SizedBox(height: 20),
+              Text('Calendar', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 12),
+              GlassCard(
+                useModuleTheme: true,
+                child: _MonthCalendarGrid(habit: habit),
+              ).animate().fadeIn(delay: 200.ms),
+              const SizedBox(height: 24),
+              GlassButton(
+                label: habit.completedToday ? 'Undo Today' : 'Complete Today',
+                expanded: true,
+                icon: habit.completedToday ? Icons.undo : Icons.check,
+                onPressed: () => ref.read(habitsStateProvider.notifier).toggleToday(habit.id),
+              ),
+              const SizedBox(height: 32),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({required this.label, required this.value, required this.icon, required this.color});
+
+  final String label;
+  final String value;
+  final String icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      useModuleTheme: true,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 20)),
+          const SizedBox(height: 4),
+          Text(value, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: color)),
+          Text(label, style: Theme.of(context).textTheme.labelSmall, textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+}
+
+class _MonthCalendarGrid extends StatelessWidget {
+  const _MonthCalendarGrid({required this.habit});
+
+  final Habit habit;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = GoalzyColors.of(context);
+    final theme = context.moduleTheme;
+    final now = DateTime.now();
+    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+    final firstWeekday = DateTime(now.year, now.month, 1).weekday;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(goalzy_date.DateUtils.formatMonth(now), style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+              .map((d) => Text(d, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: g.textMuted)))
+              .toList(),
+        ),
+        const SizedBox(height: 8),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, mainAxisSpacing: 6, crossAxisSpacing: 6),
+          itemCount: firstWeekday - 1 + daysInMonth,
+          itemBuilder: (context, index) {
+            if (index < firstWeekday - 1) return const SizedBox.shrink();
+
+            final day = index - (firstWeekday - 1) + 1;
+            final date = DateTime(now.year, now.month, day);
+            final isToday = goalzy_date.DateUtils.isSameDay(date, now);
+            final isFuture = date.isAfter(now);
+            final completed = !isFuture && _isDayCompleted(day, habit);
+
+            return Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                color: completed
+                    ? Color(int.parse('FF${habit.colorHex}', radix: 16)).withValues(alpha: 0.35)
+                    : g.chipFill,
+                border: Border.all(color: isToday ? theme.primary : g.border),
+              ),
+              child: Center(
+                child: Text(
+                  '$day',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: completed ? g.textPrimary : g.textMuted,
+                        fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
+                      ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  bool _isDayCompleted(int day, Habit habit) {
+    final hash = (habit.id.hashCode + day) % 10;
+    return hash < (habit.consistencyRate * 10).round();
+  }
+}
+
+String _frequencyLabel(HabitFrequency frequency) => switch (frequency) {
+      HabitFrequency.daily => 'Daily',
+      HabitFrequency.weekly => 'Weekly',
+      HabitFrequency.custom => 'Custom schedule',
+    };
